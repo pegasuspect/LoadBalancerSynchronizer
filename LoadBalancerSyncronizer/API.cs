@@ -56,7 +56,7 @@ namespace LoadBalancerSyncronizer
         private string _connectionString;
         public string ConnectionString
         {
-            get 
+            get
             {
                 if (_connectionString == null)
                 {
@@ -64,7 +64,8 @@ namespace LoadBalancerSyncronizer
                 }
                 return _connectionString;
             }
-            set {
+            set
+            {
                 _connectionString = value;
             }
         }
