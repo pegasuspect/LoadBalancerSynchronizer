@@ -113,12 +113,6 @@ namespace LoadBalancerSyncronizer
 
         }
 
-        private void exeProcess_OutputDataReceived(object sender, DataReceivedEventArgs e)
-        {
-            fileNames.Add(e.Data);
-        }
-
-
         private void overrideServers_Click(object sender, EventArgs e)
         {
             copyAllAsync.RunWorkerAsync();
@@ -214,7 +208,7 @@ namespace LoadBalancerSyncronizer
 
             initProgressBar(progress);
             progress.Maximum = (int)((double)progress.Value / (double)(value) * 100);
-        
+
         }
 
         private void initProgressBar(ToolStripProgressBar progress)
@@ -295,7 +289,7 @@ namespace LoadBalancerSyncronizer
 
             infoTotalFilesCopied.ThreadSafeInvoke(() => infoTotalFilesCopied.Text = "Started compressing.");
             string _7zipLocation = "C:\\Users\\student\\Desktop\\7-Zip\\7z";
-            executeCommand(_7zipLocation + " a -ttar " + DATA.mainServer + "\\files.tar " + DATA.mainServer + "\\*");
+            executeCommand(_7zipLocation + " a -ttar " + DATA.mainServer + "\\files.tar " + DATA.mainServer + "\\*", true);
 
             for (int i = 0; i < DATA.cloneServers.Length; i++)
             {
@@ -306,8 +300,10 @@ namespace LoadBalancerSyncronizer
                 setServerCloneIsDoneColor(i);
             }
 
-            //infoFilesOverriden.ThreadSafeInvoke(() => infoFilesOverriden.Text = "Output file:\r\n" + AppDomain.CurrentDomain.BaseDirectory + "output.txt");
-            //File.WriteAllLines("output.txt", fileNames);
+
+            //TODO: file lari ust uste yazdirma listeyi UI da goster.
+            infoFilesOverriden.ThreadSafeInvoke(() => infoFilesOverriden.Text = "Output file:\r\n" + AppDomain.CurrentDomain.BaseDirectory + "output.txt");
+            File.WriteAllLines("output.txt", fileNames);
             btnOverrideServers.ThreadSafeInvoke(() => btnOverrideServers.Enabled = true);
             infoTotalFilesCopied.ThreadSafeInvoke(() => infoTotalFilesCopied.Text = "Done!");
             File.Delete(DATA.mainServer + compressedFileName);
@@ -320,22 +316,42 @@ namespace LoadBalancerSyncronizer
             });
         }
 
-        private void executeCommand(string withCommand)
+        private void executeCommand(string withCommand, bool isOutput = false)
         {
             string exec = withCommand.Split(' ').First();
             // Use ProcessStartInfo class
-            ProcessStartInfo startInfo = new ProcessStartInfo()
-            {
-                FileName = exec,
-                Arguments = withCommand.Substring(exec.Length),
-                UseShellExecute = true,
-                CreateNoWindow = false
-            };
+            ProcessStartInfo startInfo = new ProcessStartInfo();
+            startInfo.FileName = Environment.GetEnvironmentVariable("comspec");//exec;
+            //startInfo.Arguments = withCommand.Substring(exec.Length);
+            startInfo.UseShellExecute = false;
+            startInfo.CreateNoWindow = false;
+            startInfo.ErrorDialog = false;
+            startInfo.UseShellExecute = false;
+            startInfo.RedirectStandardError = true;
+            startInfo.RedirectStandardInput = true;
+            startInfo.RedirectStandardOutput = true;
 
             try
             {
-                using (Process exeProcess = Process.Start(startInfo))
+                Process exeProcess = new Process();
+                exeProcess.StartInfo = startInfo;
+
+                // Hook up async stdout and stderr reading
+                exeProcess.OutputDataReceived += exeProcess_OutputDataReceived;
+                exeProcess.ErrorDataReceived += exeProcess_ErrorDataReceived;
+
+                // Execute the process
+                if (exeProcess.Start())
                 {
+                    if (isOutput)
+                    {
+                        // Begin async stdout and stderr reading
+                        exeProcess.BeginOutputReadLine();
+                        exeProcess.BeginErrorReadLine();
+                    }
+
+                    exeProcess.StandardInput.WriteLine(withCommand);
+                    exeProcess.StandardInput.WriteLine("exit");
                     exeProcess.WaitForExit();
                 }
             }
@@ -346,12 +362,23 @@ namespace LoadBalancerSyncronizer
 
         }
 
-        private void copyZippedFile(string toDirectory) {
+        private void exeProcess_ErrorDataReceived(object sender, DataReceivedEventArgs e)
+        {
+
+        }
+
+        private void exeProcess_OutputDataReceived(object sender, DataReceivedEventArgs e)
+        {
+            fileNames.Add(e.Data);
+        }
+
+        private void copyZippedFile(string toDirectory)
+        {
 
             string srcName = DATA.mainServer + compressedFileName;
             string destName = toDirectory + compressedFileName;
             FileInfo sourceFile = new FileInfo(srcName);
-            int buflen = 4*1024 * 1024; //4 MB buffer
+            int buflen = 4 * 1024 * 1024; //4 MB buffer
             byte[] buf = new byte[buflen];
             long totalBytesRead = 0;
             double pctDone = 0;
@@ -372,7 +399,7 @@ namespace LoadBalancerSyncronizer
                         totalBytesRead += bytesRead;
                         if (numReads % 10 == 0)
                         {
-                            pctDone = (double) ((double)totalBytesRead / (double)sourceFile.Length) * 100;
+                            pctDone = (double)((double)totalBytesRead / (double)sourceFile.Length) * 100;
                             msg = string.Format("Copying to directory: " + toDirectory + ", {0}% done!", (int)pctDone);
                             infoTotalFilesCopied.ThreadSafeInvoke(() => infoTotalFilesCopied.Text = msg);
                             infoProgressTotalFilesCopied.ThreadSafeInvoke(() => setProggressBarTo(infoProgressTotalFilesCopied, (int)pctDone + 1));
