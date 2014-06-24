@@ -24,6 +24,7 @@ namespace LoadBalancerSyncronizer
         private List<string> isInitialized = new List<string>();
         private List<string> fileNames = new List<string>();
         private List<string> errorLines = new List<string>();
+        private int ServerId;
 
         public Form1()
         {
@@ -34,16 +35,39 @@ namespace LoadBalancerSyncronizer
         private void Form1_Load(object sender, EventArgs e)
         {
             showMessageAsync("Set database connection!");
+            
+            ContextMenu cm = new ContextMenu();
+            cm.MenuItems.Add("Override");
+            cm.MenuItems[0].Click += OverrideClick;
+
+
+            btnClone1Settings.ContextMenu = btnClone2Settings.ContextMenu = cm;
+            btnClone3Settings.ContextMenu = btnClone4Settings.ContextMenu = cm;
+
+        }
+
+        private void OverrideClick(object sender, EventArgs e)
+        {
+            var tsItem = (MenuItem)sender;
+            var menu = (ContextMenu)tsItem.Parent;
+            AccessibleObject cms = menu.SourceControl.AccessibilityObject;
+
+            Task.Run(() => {
+                StartCopyAll();
+
+                if (cms.Name == "Server 1") ServerId = 0;
+                else if (cms.Name == "Server 2") ServerId = 1;
+                else if (cms.Name == "Server 3") ServerId = 2;
+                else if (cms.Name == "Server 4") ServerId = 3;
+
+                ExtractToCloneServer(ServerId);
+                EndCopyAll();
+            });
         }
 
         #region Button Bindings
 
 
-
-        private void overrideServers_Click(object sender, EventArgs e)
-        {
-            copyAllAsync.RunWorkerAsync();
-        }
 
         private void btnMainServer_Click(object sender, EventArgs e)
         {
@@ -63,6 +87,11 @@ namespace LoadBalancerSyncronizer
         private void btnClone3Settings_Click(object sender, EventArgs e)
         {
             promptServerAddress("Server Clone 3 Settings", 2);
+        }
+
+        private void btnClone4Settings_Click(object sender, EventArgs e)
+        {
+            promptServerAddress("Server Clone 4 Settings", 3);
         }
 
         private static void promptServerAddress(string title, int i = int.MaxValue)
@@ -170,7 +199,7 @@ namespace LoadBalancerSyncronizer
                         x.isSynced = true;
                         x.Save();
                     });
-                    infoSyncStatusLabel.Text = "Sync done!";
+                    infoSyncStatusLabel.Text = "Sync is done!";
                     statusStrip1.ThreadSafeInvoke(() => infoSyncStatusProgress.Value = 0);
                 }
                 else
@@ -195,7 +224,7 @@ namespace LoadBalancerSyncronizer
 
             if (!sourceFile.Exists)
             {
-                x.ErrorMessage = "Source file " + srcName + " does not exist";
+                x.ErrorMessage = srcName + " does not exist!";
                 return false;
             }
 
@@ -236,7 +265,20 @@ namespace LoadBalancerSyncronizer
 
 
 
-        private void copyAllAsync_DoWork(object sender, DoWorkEventArgs e)
+        private void EndCopyAll()
+        {
+            CreateOutput();
+            CreateErrorFileIfAny();
+            RemoveTarFileFromMainServer();
+            Finish();
+        }
+
+        private void RemoveTarFileFromMainServer()
+        {
+            File.Delete(DATA.mainServer + compressedFileName);
+        }
+
+        private void StartCopyAll()
         {
             s.Reset();
             s.Start();
@@ -248,20 +290,10 @@ namespace LoadBalancerSyncronizer
             //take the count. So that when its extracted, 
             //percentage will be calculatable.
             numOfArchivedFile = fileNames.Count;
-
-            for (int i = 0; i < DATA.cloneServers.Length; i++)
-                ExtractToCloneServer(i);
-
-            CreateOutput();
-            CreateErrorFileIfAny();
-
-            Finish();
         }
 
         private void Finish()
         {
-            File.Delete(DATA.mainServer + compressedFileName);
-
             s.Stop();
             infoTotalFilesCopied.ThreadSafeSetText("Completed in " + TimeSpan.FromMilliseconds(s.ElapsedMilliseconds).Seconds + " second/s.");
 
@@ -277,17 +309,19 @@ namespace LoadBalancerSyncronizer
         {
             if (!string.IsNullOrWhiteSpace(errorLines.StringJoin().Trim()))
             {
+                string errorFileName = "error" + ServerId + ".txt";
                 infoFilesOverriden.ThreadSafePrependText("Errors occured and stored at:" + Environment.NewLine
-                    + AppDomain.CurrentDomain.BaseDirectory + "errors.txt" + Environment.NewLine);
-                File.WriteAllLines("errors.txt", errorLines);
+                    + AppDomain.CurrentDomain.BaseDirectory + errorFileName + Environment.NewLine);
+                File.WriteAllLines(errorFileName, errorLines);
             }
         }
 
         private void CreateOutput()
         {
             //TODO: file lari ust uste yazdirma listeyi UI da goster.
-            infoFilesOverriden.ThreadSafeInvoke(() => infoFilesOverriden.Text = "Output file:\r\n" + AppDomain.CurrentDomain.BaseDirectory + "output.txt");
-            File.WriteAllLines("output.txt", fileNames);
+            string outputFileName = "output"+ServerId+".txt";
+            infoFilesOverriden.ThreadSafeInvoke(() => infoFilesOverriden.Text = "Output file:\r\n" + AppDomain.CurrentDomain.BaseDirectory + outputFileName);
+            File.WriteAllLines(outputFileName, fileNames);
         }
 
         private void ExtractToCloneServer(int i)
@@ -312,7 +346,6 @@ namespace LoadBalancerSyncronizer
         {
             resetButtonsBackColor();
             setButtonsEnable(false);
-            btnOverrideServers.ThreadSafeInvoke(() => btnOverrideServers.Enabled = false);
         }
 
 
@@ -432,38 +465,31 @@ namespace LoadBalancerSyncronizer
             btnClone1Settings.ThreadSafeInvoke(() => btnClone1Settings.Enabled = isEnabled);
             btnClone2Settings.ThreadSafeInvoke(() => btnClone2Settings.Enabled = isEnabled);
             btnClone3Settings.ThreadSafeInvoke(() => btnClone3Settings.Enabled = isEnabled);
+            btnClone4Settings.ThreadSafeInvoke(() => btnClone4Settings.Enabled = isEnabled);
         }
 
         private void setServerCloneIsProcesingColor(int i)
         {
             Color processColor = Color.Yellow;
 
-            switch (i)
-            {
-                case 0:
-                    btnClone1Settings.BackColor = processColor;
-                    break;
-                case 1:
-                    btnClone2Settings.BackColor = processColor;
-                    break;
-                case 2:
-                    btnClone3Settings.BackColor = processColor;
-                    break;
-                default:
-                    break;
-            }
+            setButtonColorAt(i, processColor);
         }
 
         private void resetButtonsBackColor()
         {
             Color back = Color.FromKnownColor(KnownColor.Control);
-            btnClone1Settings.BackColor = btnClone2Settings.BackColor = btnClone3Settings.BackColor = back;
+            btnClone1Settings.BackColor = btnClone2Settings.BackColor = btnClone3Settings.BackColor = btnClone4Settings.BackColor = back;
         }
 
         private void setServerCloneIsDoneColor(int i)
         {
             Color doneColor = Color.GreenYellow;
 
+            setButtonColorAt(i, doneColor);
+        }
+
+        private void setButtonColorAt(int i, Color doneColor)
+        {
             switch (i)
             {
                 case 0:
@@ -474,6 +500,9 @@ namespace LoadBalancerSyncronizer
                     break;
                 case 2:
                     btnClone3Settings.BackColor = doneColor;
+                    break;
+                case 3:
+                    btnClone4Settings.BackColor = doneColor;
                     break;
                 default:
                     break;

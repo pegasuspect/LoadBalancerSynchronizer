@@ -14,15 +14,12 @@ namespace LoadBalancerSyncronizer
         {
             get
             {
-                if (_clones == null
-                        || string.IsNullOrEmpty(_clones[0])
-                        || string.IsNullOrEmpty(_clones[1])
-                        || string.IsNullOrEmpty(_clones[2])
-                    )
+                if (_clones == null)
                     return _clones = new string[]{
                             "C:\\Users\\student\\Desktop\\Server1",
                             "C:\\Users\\student\\Desktop\\Server2",
-                            "C:\\Users\\student\\Desktop\\Server3"
+                            "C:\\Users\\student\\Desktop\\Server3",
+                            "C:\\Users\\student\\Desktop\\Server4"
                         };
                 else
                 {

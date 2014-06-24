@@ -29,37 +29,24 @@
         private void InitializeComponent()
         {
             System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(Form1));
-            this.btnOverrideServers = new System.Windows.Forms.Button();
             this.checkDatabaseForFileChanges = new System.ComponentModel.BackgroundWorker();
             this.btnClone1Settings = new System.Windows.Forms.Button();
             this.groupBox1 = new System.Windows.Forms.GroupBox();
-            this.groupBox2 = new System.Windows.Forms.GroupBox();
             this.btnDbSettings = new System.Windows.Forms.Button();
             this.btnMainServer = new System.Windows.Forms.Button();
+            this.btnClone4Settings = new System.Windows.Forms.Button();
             this.btnClone3Settings = new System.Windows.Forms.Button();
             this.btnClone2Settings = new System.Windows.Forms.Button();
             this.infoProgressTotalFilesCopied = new System.Windows.Forms.ProgressBar();
             this.infoTotalFilesCopied = new System.Windows.Forms.Label();
             this.infoFilesOverriden = new System.Windows.Forms.TextBox();
-            this.copyAllAsync = new System.ComponentModel.BackgroundWorker();
             this.statusStrip1 = new System.Windows.Forms.StatusStrip();
             this.infoSyncStatusProgress = new System.Windows.Forms.ToolStripProgressBar();
             this.toolStripStatusLabel1 = new System.Windows.Forms.ToolStripStatusLabel();
             this.infoSyncStatusLabel = new System.Windows.Forms.ToolStripStatusLabel();
             this.groupBox1.SuspendLayout();
-            this.groupBox2.SuspendLayout();
             this.statusStrip1.SuspendLayout();
             this.SuspendLayout();
-            // 
-            // btnOverrideServers
-            // 
-            this.btnOverrideServers.Location = new System.Drawing.Point(6, 19);
-            this.btnOverrideServers.Name = "btnOverrideServers";
-            this.btnOverrideServers.Size = new System.Drawing.Size(218, 54);
-            this.btnOverrideServers.TabIndex = 0;
-            this.btnOverrideServers.Text = "Override Clones";
-            this.btnOverrideServers.UseVisualStyleBackColor = true;
-            this.btnOverrideServers.Click += new System.EventHandler(this.overrideServers_Click);
             // 
             // checkDatabaseForFileChanges
             // 
@@ -77,8 +64,12 @@
             // 
             // groupBox1
             // 
-            this.groupBox1.Controls.Add(this.groupBox2);
-            this.groupBox1.Controls.Add(this.btnOverrideServers);
+            this.groupBox1.Controls.Add(this.btnDbSettings);
+            this.groupBox1.Controls.Add(this.btnMainServer);
+            this.groupBox1.Controls.Add(this.btnClone4Settings);
+            this.groupBox1.Controls.Add(this.btnClone1Settings);
+            this.groupBox1.Controls.Add(this.btnClone3Settings);
+            this.groupBox1.Controls.Add(this.btnClone2Settings);
             this.groupBox1.Dock = System.Windows.Forms.DockStyle.Left;
             this.groupBox1.Location = new System.Drawing.Point(0, 0);
             this.groupBox1.Name = "groupBox1";
@@ -86,22 +77,6 @@
             this.groupBox1.TabIndex = 3;
             this.groupBox1.TabStop = false;
             this.groupBox1.Text = "Operation";
-            // 
-            // groupBox2
-            // 
-            this.groupBox2.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
-            | System.Windows.Forms.AnchorStyles.Right)));
-            this.groupBox2.Controls.Add(this.btnDbSettings);
-            this.groupBox2.Controls.Add(this.btnMainServer);
-            this.groupBox2.Controls.Add(this.btnClone3Settings);
-            this.groupBox2.Controls.Add(this.btnClone2Settings);
-            this.groupBox2.Controls.Add(this.btnClone1Settings);
-            this.groupBox2.Location = new System.Drawing.Point(0, 92);
-            this.groupBox2.Name = "groupBox2";
-            this.groupBox2.Size = new System.Drawing.Size(233, 200);
-            this.groupBox2.TabIndex = 2;
-            this.groupBox2.TabStop = false;
-            this.groupBox2.Text = "Settings";
             // 
             // btnDbSettings
             // 
@@ -124,9 +99,19 @@
             this.btnMainServer.UseVisualStyleBackColor = true;
             this.btnMainServer.Click += new System.EventHandler(this.btnMainServer_Click);
             // 
+            // btnClone4Settings
+            // 
+            this.btnClone4Settings.Location = new System.Drawing.Point(118, 139);
+            this.btnClone4Settings.Name = "btnClone4Settings";
+            this.btnClone4Settings.Size = new System.Drawing.Size(106, 55);
+            this.btnClone4Settings.TabIndex = 5;
+            this.btnClone4Settings.Text = "Server 4";
+            this.btnClone4Settings.UseVisualStyleBackColor = true;
+            this.btnClone4Settings.Click += new System.EventHandler(this.btnClone4Settings_Click);
+            // 
             // btnClone3Settings
             // 
-            this.btnClone3Settings.Location = new System.Drawing.Point(61, 139);
+            this.btnClone3Settings.Location = new System.Drawing.Point(6, 139);
             this.btnClone3Settings.Name = "btnClone3Settings";
             this.btnClone3Settings.Size = new System.Drawing.Size(106, 55);
             this.btnClone3Settings.TabIndex = 5;
@@ -181,10 +166,6 @@
             this.infoFilesOverriden.Size = new System.Drawing.Size(581, 198);
             this.infoFilesOverriden.TabIndex = 8;
             // 
-            // copyAllAsync
-            // 
-            this.copyAllAsync.DoWork += new System.ComponentModel.DoWorkEventHandler(this.copyAllAsync_DoWork);
-            // 
             // statusStrip1
             // 
             this.statusStrip1.Items.AddRange(new System.Windows.Forms.ToolStripItem[] {
@@ -231,7 +212,6 @@
             this.Text = "Load Balancer Syncronizer";
             this.Load += new System.EventHandler(this.Form1_Load);
             this.groupBox1.ResumeLayout(false);
-            this.groupBox2.ResumeLayout(false);
             this.statusStrip1.ResumeLayout(false);
             this.statusStrip1.PerformLayout();
             this.ResumeLayout(false);
@@ -241,7 +221,6 @@
 
         #endregion
 
-        private System.Windows.Forms.Button btnOverrideServers;
         private System.ComponentModel.BackgroundWorker checkDatabaseForFileChanges;
         private System.Windows.Forms.Button btnClone1Settings;
         private System.Windows.Forms.GroupBox groupBox1;
@@ -250,14 +229,13 @@
         private System.Windows.Forms.ProgressBar infoProgressTotalFilesCopied;
         private System.Windows.Forms.Label infoTotalFilesCopied;
         private System.Windows.Forms.TextBox infoFilesOverriden;
-        private System.ComponentModel.BackgroundWorker copyAllAsync;
-        private System.Windows.Forms.GroupBox groupBox2;
         private System.Windows.Forms.Button btnMainServer;
         private System.Windows.Forms.Button btnDbSettings;
         private System.Windows.Forms.StatusStrip statusStrip1;
         private System.Windows.Forms.ToolStripStatusLabel toolStripStatusLabel1;
         private System.Windows.Forms.ToolStripStatusLabel infoSyncStatusLabel;
         private System.Windows.Forms.ToolStripProgressBar infoSyncStatusProgress;
+        private System.Windows.Forms.Button btnClone4Settings;
     }
 }
 
