@@ -177,36 +177,39 @@ namespace LoadBalancerSyncronizer
         {
             try
             {
-                List<SyncronizedFilePath> paths = Provider.Database.ReadList<SyncronizedFilePath>(FilterExpression.Create("isSynced", CriteriaTypes.Eq, false));
+                List<SyncronizedFilePath> paths = Provider.Database.ReadList<SyncronizedFilePath>(
+                    FilterExpression.Create("isSynced", CriteriaTypes.Eq, false)
+                    .And("PublishTime", CriteriaTypes.Lt, DateTime.Now)
+                    );
                 if (paths.Count != 0)
                 {
                     double i = 0;
                     setProggressBarTo(infoSyncStatusProgress, (int)i);
                     paths.ForEach(x =>
                     {
-                        infoSyncStatusLabel.Text = "Syncing: " + x.path;
+                        statusStripSafe(() => infoSyncStatusLabel.Text = "Syncing: " + x.path);
                         foreach (string serverPath in DATA.cloneServers)
                         {
                             i += 100.0 / (paths.Count * DATA.cloneServers.Length);
                             setProggressBarTo(infoSyncStatusProgress, (int)i);
                             if (!CopyFileFromFileToFile(DATA.mainServer + x.path, serverPath + x.path, x))
                             {
-                                infoSyncStatusLabel.Text = "Failed!";
+                                statusStripSafe(() => infoSyncStatusLabel.Text = "Failed!");
                                 break;
                             }
                         }
-                        infoSyncStatusLabel.Text = DATA.mainServer + x.path + " synced!";
+                        statusStripSafe(() => infoSyncStatusLabel.Text = DATA.mainServer + x.path + " synced!");
                         x.isSynced = true;
                         x.Save();
                     });
-                    infoSyncStatusLabel.Text = "Sync is done!";
+                    statusStripSafe(() => infoSyncStatusLabel.Text = "Sync is done!");
                     statusStrip1.ThreadSafeInvoke(() => infoSyncStatusProgress.Value = 0);
                 }
                 else
                 {
                     Task.Run(() => {
                         Thread.Sleep(5000);
-                        infoSyncStatusLabel.Text = "No files to sync!"; 
+                        statusStripSafe(() => infoSyncStatusLabel.Text = "No files to sync!");
                     });
                 }
             }
@@ -216,6 +219,10 @@ namespace LoadBalancerSyncronizer
                 this.ThreadSafeInvoke(() => this.Close());
             }
 
+        }
+
+        private void statusStripSafe(MethodInvoker method) {
+            statusStrip1.ThreadSafeInvoke(() => method.Invoke());
         }
 
         private bool CopyFileFromFileToFile(string srcName, string destName, SyncronizedFilePath x)
@@ -229,6 +236,8 @@ namespace LoadBalancerSyncronizer
             }
 
             FileInfo destFile = new FileInfo(destName);
+
+            Directory.CreateDirectory(Path.GetDirectoryName(destFile.FullName));
 
             File.Copy(sourceFile.FullName, destFile.FullName, true);
 

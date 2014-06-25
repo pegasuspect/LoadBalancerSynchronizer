@@ -13,6 +13,7 @@ namespace LoadBalancerSyncronizer
         public string path { get; set; }
         public DateTime CreatedAt { get; set; }
         public DateTime UpdatedAt { get; set; }
+        public DateTime PublishTime { get; set; }
         public string ErrorMessage { get; set; }
 
         public void Save() {

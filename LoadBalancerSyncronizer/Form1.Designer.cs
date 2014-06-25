@@ -104,7 +104,7 @@
             this.btnClone4Settings.Location = new System.Drawing.Point(118, 139);
             this.btnClone4Settings.Name = "btnClone4Settings";
             this.btnClone4Settings.Size = new System.Drawing.Size(106, 55);
-            this.btnClone4Settings.TabIndex = 5;
+            this.btnClone4Settings.TabIndex = 6;
             this.btnClone4Settings.Text = "Server 4";
             this.btnClone4Settings.UseVisualStyleBackColor = true;
             this.btnClone4Settings.Click += new System.EventHandler(this.btnClone4Settings_Click);
@@ -189,12 +189,14 @@
             this.toolStripStatusLabel1.Name = "toolStripStatusLabel1";
             this.toolStripStatusLabel1.Size = new System.Drawing.Size(135, 17);
             this.toolStripStatusLabel1.Text = "Background sync status:";
+            this.toolStripStatusLabel1.TextAlign = System.Drawing.ContentAlignment.TopCenter;
             // 
             // infoSyncStatusLabel
             // 
             this.infoSyncStatusLabel.Name = "infoSyncStatusLabel";
             this.infoSyncStatusLabel.Size = new System.Drawing.Size(67, 17);
             this.infoSyncStatusLabel.Text = "Not Started";
+            this.infoSyncStatusLabel.TextAlign = System.Drawing.ContentAlignment.TopCenter;
             // 
             // Form1
             // 
