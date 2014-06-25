@@ -21,19 +21,8 @@ namespace LoadBalancerSyncronizer
 
             TextBox textBox = new TextBox() { Left = 50, Top = 50, Width = 400 };
             textBox.Text = defaultInputValue;
-            prompt.Controls.Add(textBox);
 
-            ComboBox cmb = new ComboBox() { Left = 50, Width = 250, Top = 75 };
-            if (isDBSettings)
-            {
-                cmb.Text = "Select DB Type";
-                foreach (DatabaseProvider dbType in Enum.GetValues(typeof(DatabaseProvider)))
-                {
-                    cmb.Items.Add(dbType);
-                }
-                cmb.SelectedItem = Form1.DATA.ConnectionType;
-                prompt.Controls.Add(cmb);
-            }
+            textBox.KeyPress += prompt_KeyPress;
 
             Button confirmation = new Button() { Text = "Ok", Left = 351, Width = 100, Top = 75 };
             confirmation.Click += (sender, e) =>
@@ -42,8 +31,28 @@ namespace LoadBalancerSyncronizer
                 prompt.Close();
             };
 
-            textBox.KeyPress += prompt_KeyPress;
+            #region Create Combo If Needed
+            ComboBox cmb = new ComboBox();
 
+            if (isDBSettings)
+            {
+                cmb.Left = 50;
+                cmb.Width = 250;
+                cmb.Top = 75;
+                cmb.Text = "Select DB Type";
+
+                foreach (DatabaseProvider dbType in Enum.GetValues(typeof(DatabaseProvider)))
+                {
+                    cmb.Items.Add(dbType);
+                }
+
+                cmb.SelectedItem = Form1.DATA.ConnectionType;
+
+                prompt.Controls.Add(cmb);
+            }
+            #endregion
+
+            prompt.Controls.Add(textBox);
             prompt.Controls.Add(confirmation);
             prompt.AcceptButton = confirmation;
 

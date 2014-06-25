@@ -69,6 +69,22 @@ namespace LoadBalancerSyncronizer
 
 
 
+        private void btnBackgroundSync_Click(object sender, EventArgs e)
+        {
+            string title = "Server roots List";
+            IncrementablePromptResult res = IncrementablePrompt.ShowDialog("Enter server root paths:", title, DATA.ServerRoots);
+            string failedPath = "";
+            while (!filesOK(res.inputValues, out failedPath) && res.closeOperation == DialogResult.OK)
+            {
+                res = IncrementablePrompt.ShowDialog("Path: " + failedPath + " does not exist! Try again!", title, res.inputValues);
+            }
+            if (filesOK(res.inputValues, out failedPath))
+            {
+                DATA.ServerRoots = res.inputValues;
+                DATA.Save();
+            }
+        }
+
         private void btnMainServer_Click(object sender, EventArgs e)
         {
             promptServerAddress("Main Server Settings");
@@ -98,11 +114,11 @@ namespace LoadBalancerSyncronizer
         {
             PromptResult res = Prompt.ShowDialog("Enter server root path:", title, false, i == int.MaxValue ? DATA.mainServer : DATA.cloneServers[i]);
 
-            while (checkFile(res) && res.closeOperation == DialogResult.OK)
+            while (checkFile(res.inputValue) && res.closeOperation == DialogResult.OK)
             {
                 res = Prompt.ShowDialog("File path does not exist! Enter again:", title, false, i == int.MaxValue ? DATA.mainServer : DATA.cloneServers[i]);
             }
-            if (!checkFile(res))
+            if (!checkFile(res.inputValue))
             {
                 if (i == int.MaxValue) DATA.mainServer = res.inputValue;
                 else DATA.cloneServers[i] = res.inputValue;
@@ -110,9 +126,22 @@ namespace LoadBalancerSyncronizer
             }
         }
 
-        private static bool checkFile(PromptResult res)
+        private static bool checkFile(string path)
         {
-            return (string.IsNullOrEmpty(res.inputValue.Trim()) || !(new DirectoryInfo(res.inputValue).Exists));
+            return (string.IsNullOrEmpty(path.Trim()) || !(new DirectoryInfo(path).Exists));
+        }
+
+
+        private static bool filesOK(List<string> paths, out string failedPath)
+        {
+            foreach (string path in paths)
+                if (!(new DirectoryInfo(path).Exists))
+                {
+                    failedPath = path;
+                    return false;
+                }
+            failedPath = "";
+            return true;
         }
 
 

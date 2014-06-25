@@ -9,6 +9,24 @@ namespace LoadBalancerSyncronizer
 {
     public class API
     {
+        private List<string> _serverRoots;
+        public List<string> ServerRoots
+        {
+            get
+            {
+                if (_serverRoots == null)
+                {
+                    return new List<string>();
+                }
+                return _serverRoots;
+                
+            }
+            set 
+            {
+                _serverRoots = value;
+            }
+        }
+
         private string[] _clones;
         public string[] cloneServers
         {

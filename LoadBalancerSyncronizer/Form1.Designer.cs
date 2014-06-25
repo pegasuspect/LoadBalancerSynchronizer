@@ -44,6 +44,8 @@
             this.infoSyncStatusProgress = new System.Windows.Forms.ToolStripProgressBar();
             this.toolStripStatusLabel1 = new System.Windows.Forms.ToolStripStatusLabel();
             this.infoSyncStatusLabel = new System.Windows.Forms.ToolStripStatusLabel();
+            this.folderBrowserDialog1 = new System.Windows.Forms.FolderBrowserDialog();
+            this.btnBackgroundSync = new System.Windows.Forms.Button();
             this.groupBox1.SuspendLayout();
             this.statusStrip1.SuspendLayout();
             this.SuspendLayout();
@@ -68,6 +70,7 @@
             this.groupBox1.Controls.Add(this.btnMainServer);
             this.groupBox1.Controls.Add(this.btnClone4Settings);
             this.groupBox1.Controls.Add(this.btnClone1Settings);
+            this.groupBox1.Controls.Add(this.btnBackgroundSync);
             this.groupBox1.Controls.Add(this.btnClone3Settings);
             this.groupBox1.Controls.Add(this.btnClone2Settings);
             this.groupBox1.Dock = System.Windows.Forms.DockStyle.Left;
@@ -198,6 +201,16 @@
             this.infoSyncStatusLabel.Text = "Not Started";
             this.infoSyncStatusLabel.TextAlign = System.Drawing.ContentAlignment.TopCenter;
             // 
+            // btnBackgroundSync
+            // 
+            this.btnBackgroundSync.Location = new System.Drawing.Point(6, 200);
+            this.btnBackgroundSync.Name = "btnBackgroundSync";
+            this.btnBackgroundSync.Size = new System.Drawing.Size(218, 55);
+            this.btnBackgroundSync.TabIndex = 5;
+            this.btnBackgroundSync.Text = "Background Sync Server Roots";
+            this.btnBackgroundSync.UseVisualStyleBackColor = true;
+            this.btnBackgroundSync.Click += new System.EventHandler(this.btnBackgroundSync_Click);
+            // 
             // Form1
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
@@ -238,6 +251,8 @@
         private System.Windows.Forms.ToolStripStatusLabel infoSyncStatusLabel;
         private System.Windows.Forms.ToolStripProgressBar infoSyncStatusProgress;
         private System.Windows.Forms.Button btnClone4Settings;
+        private System.Windows.Forms.Button btnBackgroundSync;
+        private System.Windows.Forms.FolderBrowserDialog folderBrowserDialog1;
     }
 }
 
