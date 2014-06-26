@@ -40,7 +40,7 @@ namespace LoadBalancerSyncronizer
                 cmb.Width = 250;
                 cmb.Top = 75;
                 cmb.Text = "Select DB Type";
-
+                cmb.KeyPress += prompt_KeyPress;
                 foreach (DatabaseProvider dbType in Enum.GetValues(typeof(DatabaseProvider)))
                 {
                     cmb.Items.Add(dbType);
@@ -67,7 +67,7 @@ namespace LoadBalancerSyncronizer
             return res;
         }
 
-        private static void prompt_KeyPress(object sender, KeyPressEventArgs e)
+        public static void prompt_KeyPress(object sender, KeyPressEventArgs e)
         {
             if (e.KeyChar == (char)27)
             {

@@ -153,20 +153,20 @@ namespace LoadBalancerSyncronizer
 
             if (res.closeOperation == DialogResult.OK && !isDBConnected(res))
             {
-                MessageBox.Show("Couldn't connect to database! Background process is not started. \nPlease enter your connection string right!");
-                this.Close();
+                res = Prompt.ShowDialog("Couldn't connect, check your connection and string then try again:", title, true, DATA.ConnectionString);
             }
-            if (isDBConnected(res))
+            if (res.closeOperation == DialogResult.OK)
             {
                 infoSyncStatusLabel.Text = "Connected to DB!";
                 DATA.ConnectionString = res.inputValue;
                 DATA.ConnectionType = res.DbConnectionType;
                 DATA.Save();
-            }
 
-            //run background operation
-            if (!checkDatabaseForFileChanges.IsBusy)
+                //run background operation
+                if (checkDatabaseForFileChanges.IsBusy)
+                    checkDatabaseForFileChanges.CancelAsync();
                 checkDatabaseForFileChanges.RunWorkerAsync();
+            }
         }
 
         private bool isDBConnected(PromptResult res)
@@ -206,39 +206,49 @@ namespace LoadBalancerSyncronizer
         {
             try
             {
-                List<SyncronizedFilePath> paths = Provider.Database.ReadList<SyncronizedFilePath>(
-                    FilterExpression.Create("isSynced", CriteriaTypes.Eq, false)
-                    .And("PublishTime", CriteriaTypes.Lt, DateTime.Now)
+                List<ApplicationSyncPath> paths = 
+                    Provider.Database.ReadList<ApplicationSyncPath>(
+                        FilterExpression.Create("isSynced", CriteriaTypes.Eq, false).And("PublishTime", CriteriaTypes.Lt, DateTime.Now)
                     );
                 if (paths.Count != 0)
                 {
-                    double i = 0;
-                    setProggressBarTo(infoSyncStatusProgress, (int)i);
+                    btnBackgroundSync.ThreadSafeInvoke(() => btnBackgroundSync.Enabled = false);
+                    double percentage = 0;
+                    setProggressBarTo(infoSyncStatusProgress, (int)percentage);
                     paths.ForEach(x =>
                     {
                         statusStripSafe(() => infoSyncStatusLabel.Text = "Syncing: " + x.path);
-                        foreach (string serverPath in DATA.cloneServers)
+                        for (int i = 1; i < DATA.ServerRoots.Count; i++)
                         {
-                            i += 100.0 / (paths.Count * DATA.cloneServers.Length);
-                            setProggressBarTo(infoSyncStatusProgress, (int)i);
-                            if (!CopyFileFromFileToFile(DATA.mainServer + x.path, serverPath + x.path, x))
+                            string serverPath = DATA.ServerRoots[i];
+                            percentage += 100.0 / (paths.Count * DATA.cloneServers.Length);
+                            setProggressBarTo(infoSyncStatusProgress, (int)percentage);
+                            if (!CopyFileFromFileToFile(DATA.ServerRoots[0] + x.path, serverPath + x.path, x))
                             {
                                 statusStripSafe(() => infoSyncStatusLabel.Text = "Failed!");
                                 break;
                             }
+                            statusStripSafe(() => infoSyncStatusLabel.Text = "Sync is done!");
                         }
-                        statusStripSafe(() => infoSyncStatusLabel.Text = DATA.mainServer + x.path + " synced!");
-                        x.isSynced = true;
-                        x.Save();
+
+                        if (DATA.ServerRoots.Count == 0)
+                            statusStripSafe(() => infoSyncStatusLabel.Text = "Enter server root paths!");
+                        else
+                        {
+                            x.isSynced = true;
+                            x.Save();
+                        }
+                        
                     });
-                    statusStripSafe(() => infoSyncStatusLabel.Text = "Sync is done!");
-                    statusStrip1.ThreadSafeInvoke(() => infoSyncStatusProgress.Value = 0);
+                    btnBackgroundSync.ThreadSafeInvoke(() => btnBackgroundSync.Enabled = true);
+                    statusStrip1.ThreadSafeInvoke(() => infoSyncStatusProgress.Value = 100);
                 }
                 else
                 {
                     Task.Run(() => {
                         Thread.Sleep(5000);
                         statusStripSafe(() => infoSyncStatusLabel.Text = "No files to sync!");
+                        statusStrip1.ThreadSafeInvoke(() => infoSyncStatusProgress.Value = 0);
                     });
                 }
             }
@@ -254,7 +264,7 @@ namespace LoadBalancerSyncronizer
             statusStrip1.ThreadSafeInvoke(() => method.Invoke());
         }
 
-        private bool CopyFileFromFileToFile(string srcName, string destName, SyncronizedFilePath x)
+        private bool CopyFileFromFileToFile(string srcName, string destName, ApplicationSyncPath x)
         {
             FileInfo sourceFile = new FileInfo(Path.GetFullPath(srcName));
 

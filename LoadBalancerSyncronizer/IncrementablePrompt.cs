@@ -37,6 +37,7 @@ namespace LoadBalancerSyncronizer
             list.BorderStyle = BorderStyle.None;
             list.BackColor = prompt.BackColor;
             list.Height = 0;
+            list.MultiSelect = false;
 
             Button btnAdd = new Button() { Text = "+", Width = 20, Height = 20, Left = list.Left, Top = btnConfirmation.Top };
             Button btnRemove = new Button() { Text = "-", Width = 20, Height = 20, Left = list.Left + 30, Top = btnConfirmation.Top };
@@ -50,6 +51,11 @@ namespace LoadBalancerSyncronizer
             {
                 list.removeTextBox(prompt, btnAdd, btnConfirmation, btnRemove);
             };
+            
+            prompt.Controls.Add(list);
+            prompt.Controls.Add(btnAdd);
+            prompt.Controls.Add(btnRemove);
+            prompt.Controls.Add(btnConfirmation);
 
             int i = 0;
             do
@@ -60,12 +66,7 @@ namespace LoadBalancerSyncronizer
             }
             while (i < defaultInputValues.Count);
 
-
-            prompt.Controls.Add(list);
-            prompt.Controls.Add(btnConfirmation);
-            prompt.Controls.Add(btnAdd);
-            prompt.Controls.Add(btnRemove);
-
+            list.Focus();
 
             prompt.AcceptButton = btnConfirmation;
             IncrementablePromptResult res = new IncrementablePromptResult();
@@ -90,6 +91,7 @@ namespace LoadBalancerSyncronizer
             int lastTxtBoxHeight = txtBox != null ? txtBox.Height + 10 : 0;
             int lastTxtBoxTop = txtBox != null ? txtBox.Top : 0;
             TextBox textBox = new TextBox() { Top = lastTxtBoxTop + lastTxtBoxHeight, Width = 400, Text = defVal };
+            textBox.KeyPress += prompt_KeyPress;
             list.Controls.Add(textBox);
             list.Height += lastTxtBoxHeight == 0 ? 20 : lastTxtBoxHeight;
             prmpt.Height += lastTxtBoxHeight;
@@ -126,6 +128,13 @@ namespace LoadBalancerSyncronizer
             prompt.StartPosition = FormStartPosition.CenterScreen;
         }
 
+        private static void prompt_KeyPress(object sender, KeyPressEventArgs e)
+        {
+            if (e.KeyChar == (char)27)
+            {
+                Form.ActiveForm.Close();
+            }
+        }
     }
     public class IncrementablePromptResult
     {

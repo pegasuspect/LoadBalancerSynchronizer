@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 
 namespace LoadBalancerSyncronizer
 {
-    public class SyncronizedFilePath : DatabaseEntity
+    public class ApplicationSyncPath : DatabaseEntity
     {
         public bool isSynced { get; set; }
         public string path { get; set; }
