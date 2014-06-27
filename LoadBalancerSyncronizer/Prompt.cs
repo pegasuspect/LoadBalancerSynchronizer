@@ -10,7 +10,7 @@ namespace LoadBalancerSyncronizer
 {
     public static class Prompt
     {
-        public static PromptResult ShowDialog(string text, string caption, bool isDBSettings = false, string defaultInputValue = "")
+        public static PromptResult ShowDialog(string text, string caption, bool isDBSettings = false, Tuple<string, string> defaultInputValue = null)
         {
             Form prompt = new Form();
 
@@ -20,11 +20,19 @@ namespace LoadBalancerSyncronizer
             prompt.Controls.Add(textLabel);
 
             TextBox textBox = new TextBox() { Left = 50, Top = 50, Width = 400 };
-            textBox.Text = defaultInputValue;
-
+            textBox.Text = defaultInputValue != null ? defaultInputValue.Item1 : "";
+            textBox.addPlaceHolder("Button text...");
             textBox.KeyPress += prompt_KeyPress;
 
-            Button confirmation = new Button() { Text = "Ok", Left = 351, Width = 100, Top = 75 };
+            TextBox textBox2 = new TextBox() { Left = 50, Top = 75, Width = 400 };
+            textBox2.Text = defaultInputValue != null ? defaultInputValue.Item2 : "";
+            if (isDBSettings) textBox2.addPlaceHolder("Enter connection string...");
+            else textBox2.addPlaceHolder("Enter overrite server path...");
+            
+            textBox2.KeyPress += prompt_KeyPress;
+
+
+            Button confirmation = new Button() { Text = "Ok", Left = 351, Width = 100, Top = 100 };
             confirmation.Click += (sender, e) =>
             {
                 prompt.DialogResult = DialogResult.OK;
@@ -38,7 +46,7 @@ namespace LoadBalancerSyncronizer
             {
                 cmb.Left = 50;
                 cmb.Width = 250;
-                cmb.Top = 75;
+                cmb.Top = 100;
                 cmb.Text = "Select DB Type";
                 cmb.KeyPress += prompt_KeyPress;
                 foreach (DatabaseProvider dbType in Enum.GetValues(typeof(DatabaseProvider)))
@@ -53,12 +61,13 @@ namespace LoadBalancerSyncronizer
             #endregion
 
             prompt.Controls.Add(textBox);
+            prompt.Controls.Add(textBox2);
             prompt.Controls.Add(confirmation);
             prompt.AcceptButton = confirmation;
 
             PromptResult res = new PromptResult();
             res.closeOperation = prompt.ShowDialog();
-            res.inputValue = textBox.Text;
+            res.inputValue = new Tuple<string,string>(textBox.Text, textBox2.Text);
             if (isDBSettings)
             {
                 res.DbConnectionType = cmb.SelectedItem == null ? DatabaseProvider.MySQL : (DatabaseProvider)cmb.SelectedItem;
@@ -71,6 +80,7 @@ namespace LoadBalancerSyncronizer
         {
             if (e.KeyChar == (char)27)
             {
+                Form.ActiveForm.DialogResult = DialogResult.Cancel;
                 Form.ActiveForm.Close();
             }
         }
@@ -78,7 +88,7 @@ namespace LoadBalancerSyncronizer
         private static void init(string caption, Form prompt)
         {
             prompt.Width = 500;
-            prompt.Height = 170;
+            prompt.Height = 200;
             prompt.Text = caption;
             prompt.FormBorderStyle = FormBorderStyle.FixedToolWindow;
             prompt.StartPosition = FormStartPosition.CenterScreen;
@@ -89,7 +99,7 @@ namespace LoadBalancerSyncronizer
     public class PromptResult
     {
         public DialogResult closeOperation { get; set; }
-        public string inputValue { get; set; }
+        public Tuple<string, string> inputValue { get; set; }
         public DatabaseProvider DbConnectionType { get; set; }
     }
 }

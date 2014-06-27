@@ -27,7 +27,7 @@ namespace LoadBalancerSyncronizer
             {
                 if (__db == null)
                 {
-                    Database db = new Database(Form1.DATA.ConnectionString, Form1.DATA.ConnectionType);
+                    Database db = new Database(Form1.DATA.ConnectionString.Item2, Form1.DATA.ConnectionType);
                     db.CreateTablesAutomatically = true;
                     __db = db;
                 }

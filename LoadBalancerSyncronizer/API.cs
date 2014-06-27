@@ -1,4 +1,5 @@
 ﻿using Cinar.Database;
+using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -16,86 +17,43 @@ namespace LoadBalancerSyncronizer
             {
                 if (_serverRoots == null)
                 {
-                    return new List<string>();
+                    _serverRoots = new List<string>();
                 }
+
                 return _serverRoots;
-                
             }
-            set 
+            set
             {
                 _serverRoots = value;
             }
         }
 
-        private string[] _clones;
-        public string[] cloneServers
+        private List<Tuple<string, string>> _clones;
+        public List<Tuple<string, string>> CloneServers
         {
             get
             {
                 if (_clones == null)
-                    return _clones = new string[]{
-                            "C:\\Users\\student\\Desktop\\Server1",
-                            "C:\\Users\\student\\Desktop\\Server2",
-                            "C:\\Users\\student\\Desktop\\Server3",
-                            "C:\\Users\\student\\Desktop\\Server4"
-                        };
-                else
-                {
-                    return _clones;
-                }
+                    _clones = new List<Tuple<string, string>>();
+
+                return _clones;
             }
-            set {
+            set
+            {
                 _clones = value;
             }
         }
 
-        private string _mainServer;
-        public string mainServer
-        {
-            get
-            {
-                if (string.IsNullOrWhiteSpace(_mainServer))
-                {
-                    return _mainServer = "C:\\Users\\student\\Desktop\\MainServer";
-                }
-                else
-                {
-                    return _mainServer;
-                }
-            }
-            set {
-                _mainServer = value;
-            }
-        }
 
-        private string _connectionString;
-        public string ConnectionString
-        {
-            get
-            {
-                if (_connectionString == null)
-                {
-                    return "Server=localhost;Database=cinarcms;Uid=root;Pwd=;old syntax=yes;charset=utf8";
-                }
-                return _connectionString;
-            }
-            set
-            {
-                _connectionString = value;
-            }
-        }
+        public Tuple<string, string> MainServer { get; set; }
+
+        public Tuple<string, string> ConnectionString { get; set; }
 
         private DatabaseProvider _connType;
-        public DatabaseProvider ConnectionType
-        {
-            get
-            {
-                return _connType;
-            }
-            set { _connType = value; }
-        }
+        public DatabaseProvider ConnectionType { get; set; }
 
-        public void Save(){
+        public void Save()
+        {
             FileSerializer.Save(this);
         }
 

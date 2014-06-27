@@ -17,28 +17,38 @@ namespace LoadBalancerSyncronizer
     public partial class Form1 : Form
     {
         public static API DATA;
-        public static double numOfArchivedFile;
-        public static double tempNumOfArchivedFile;
+
         public Stopwatch s = new Stopwatch();
         private const string compressedFileName = "\\files.tar";
-        private List<string> isInitialized = new List<string>();
         private List<string> fileNames = new List<string>();
         private List<string> errorLines = new List<string>();
         private int ServerId;
+        private static double totalnumOfFiles;
+        private static double numOfprocessedFiles;
+        private static double percentageCheckPoint;
+        private static double percentageStop = 33;
 
         public Form1()
         {
             DATA = FileSerializer.Load();
             InitializeComponent();
+
+            //init button names..
+            btnDbSettings.Text = DATA.ConnectionString.Item1;
+            btnClone1Settings.Text = DATA.CloneServers[0].Item1;
+            btnClone2Settings.Text = DATA.CloneServers[1].Item1;
+            btnClone3Settings.Text = DATA.CloneServers[2].Item1;
+            btnClone4Settings.Text = DATA.CloneServers[3].Item1;
+            btnMainServer.Text = DATA.MainServer.Item1;
         }
 
         private void Form1_Load(object sender, EventArgs e)
         {
             showMessageAsync("Set database connection!");
-            
+
             ContextMenu cm = new ContextMenu();
             cm.MenuItems.Add("Override");
-            cm.MenuItems[0].Click += OverrideClick;
+            cm.MenuItems[0].Click += RightClickOverride;
 
 
             btnClone1Settings.ContextMenu = btnClone2Settings.ContextMenu = cm;
@@ -46,102 +56,37 @@ namespace LoadBalancerSyncronizer
 
         }
 
-        private void OverrideClick(object sender, EventArgs e)
+        #region Button Bindings
+
+
+
+        private void RightClickOverride(object sender, EventArgs e)
         {
             var tsItem = (MenuItem)sender;
             var menu = (ContextMenu)tsItem.Parent;
             AccessibleObject cms = menu.SourceControl.AccessibilityObject;
 
-            Task.Run(() => {
+            Task.Run(() =>
+            {
+                //Get server Id from right clicked button
+                ServerId = DATA.CloneServers.Select(x => x.Item1).IndexOf(x => x == cms.Name);
+
                 StartCopyAll();
 
-                if (cms.Name == "Server 1") ServerId = 0;
-                else if (cms.Name == "Server 2") ServerId = 1;
-                else if (cms.Name == "Server 3") ServerId = 2;
-                else if (cms.Name == "Server 4") ServerId = 3;
+                //Checkpoint 1
+                ControlExtension.percentage = percentageCheckPoint = 0;
+                TarMainServer();
 
-                ExtractToCloneServer(ServerId);
+                //Checkpoint 2
+                ControlExtension.percentage = percentageCheckPoint = 33;
+                StartCopy(ServerId);
+
+                //Checkpoint 3
+                ControlExtension.percentage = percentageCheckPoint = 66;
+                extractTarFile(ServerId);
+
                 EndCopyAll();
             });
-        }
-
-        #region Button Bindings
-
-
-
-        private void btnBackgroundSync_Click(object sender, EventArgs e)
-        {
-            string title = "Server roots List";
-            IncrementablePromptResult res = IncrementablePrompt.ShowDialog("Enter server root paths:", title, DATA.ServerRoots);
-            string failedPath = "";
-            while (!filesOK(res.inputValues, out failedPath) && res.closeOperation == DialogResult.OK)
-            {
-                res = IncrementablePrompt.ShowDialog("Path: " + failedPath + " does not exist! Try again!", title, res.inputValues);
-            }
-            if (filesOK(res.inputValues, out failedPath))
-            {
-                DATA.ServerRoots = res.inputValues;
-                DATA.Save();
-            }
-        }
-
-        private void btnMainServer_Click(object sender, EventArgs e)
-        {
-            promptServerAddress("Main Server Settings");
-        }
-
-        private void btnClone1Settings_Click(object sender, EventArgs e)
-        {
-            promptServerAddress("Server Clone 1 Settings", 0);
-        }
-
-        private void btnClone2Settings_Click(object sender, EventArgs e)
-        {
-            promptServerAddress("Server Clone 2 Settings", 1);
-        }
-
-        private void btnClone3Settings_Click(object sender, EventArgs e)
-        {
-            promptServerAddress("Server Clone 3 Settings", 2);
-        }
-
-        private void btnClone4Settings_Click(object sender, EventArgs e)
-        {
-            promptServerAddress("Server Clone 4 Settings", 3);
-        }
-
-        private static void promptServerAddress(string title, int i = int.MaxValue)
-        {
-            PromptResult res = Prompt.ShowDialog("Enter server root path:", title, false, i == int.MaxValue ? DATA.mainServer : DATA.cloneServers[i]);
-
-            while (checkFile(res.inputValue) && res.closeOperation == DialogResult.OK)
-            {
-                res = Prompt.ShowDialog("File path does not exist! Enter again:", title, false, i == int.MaxValue ? DATA.mainServer : DATA.cloneServers[i]);
-            }
-            if (!checkFile(res.inputValue))
-            {
-                if (i == int.MaxValue) DATA.mainServer = res.inputValue;
-                else DATA.cloneServers[i] = res.inputValue;
-                DATA.Save();
-            }
-        }
-
-        private static bool checkFile(string path)
-        {
-            return (string.IsNullOrEmpty(path.Trim()) || !(new DirectoryInfo(path).Exists));
-        }
-
-
-        private static bool filesOK(List<string> paths, out string failedPath)
-        {
-            foreach (string path in paths)
-                if (!(new DirectoryInfo(path).Exists))
-                {
-                    failedPath = path;
-                    return false;
-                }
-            failedPath = "";
-            return true;
         }
 
 
@@ -159,13 +104,18 @@ namespace LoadBalancerSyncronizer
             {
                 infoSyncStatusLabel.Text = "Connected to DB!";
                 DATA.ConnectionString = res.inputValue;
+                (sender as Button).Text = res.inputValue.Item1;
                 DATA.ConnectionType = res.DbConnectionType;
                 DATA.Save();
 
                 //run background operation
                 if (checkDatabaseForFileChanges.IsBusy)
                     checkDatabaseForFileChanges.CancelAsync();
-                checkDatabaseForFileChanges.RunWorkerAsync();
+                Task.Run(() => {
+                    while (checkDatabaseForFileChanges.CancellationPending)
+                        Thread.Sleep(100);
+                        checkDatabaseForFileChanges.RunWorkerAsync();
+                });
             }
         }
 
@@ -174,7 +124,7 @@ namespace LoadBalancerSyncronizer
             string version = "";
             try
             {
-                version = new Database(res.inputValue, res.DbConnectionType).GetVersion();
+                version = new Database(res.inputValue.Item2, res.DbConnectionType).GetVersion();
             }
             catch
             {
@@ -182,6 +132,86 @@ namespace LoadBalancerSyncronizer
             }
 
             return version != "";
+        }
+
+
+        private void btnBackgroundSync_Click(object sender, EventArgs e)
+        {
+            string title = "Server roots List";
+            IncrementablePromptResult res = IncrementablePrompt.ShowDialog("Enter server root paths:", title, DATA.ServerRoots);
+            string failedPath = "";
+            while (!filesOK(res.inputValues, out failedPath) && res.closeOperation == DialogResult.OK)
+            {
+                res = IncrementablePrompt.ShowDialog("Path: " + failedPath + " does not exist! Try again!", title, res.inputValues);
+            }
+
+            if (res.closeOperation == DialogResult.OK)
+            {
+                DATA.ServerRoots = res.inputValues;
+                DATA.Save();
+            }
+        }
+
+        private void btnMainServer_Click(object sender, EventArgs e)
+        {
+            promptServerAddress("Main Server Settings", int.MaxValue, sender);
+        }
+
+        private void btnClone1Settings_Click(object sender, EventArgs e)
+        {
+            promptServerAddress("Server Clone 1 Settings", 0, sender);
+        }
+
+        private void btnClone2Settings_Click(object sender, EventArgs e)
+        {
+            promptServerAddress("Server Clone 2 Settings", 1, sender);
+        }
+
+        private void btnClone3Settings_Click(object sender, EventArgs e)
+        {
+            promptServerAddress("Server Clone 3 Settings", 2, sender);
+        }
+
+        private void btnClone4Settings_Click(object sender, EventArgs e)
+        {
+            promptServerAddress("Server Clone 4 Settings", 3, sender);
+        }
+        
+        private static void promptServerAddress(string title, int i = int.MaxValue, object sender = null)
+        {
+            PromptResult res = Prompt.ShowDialog("Enter server root path:", title, false, i == int.MaxValue ? DATA.MainServer : DATA.CloneServers[i]);
+            if (res.closeOperation == DialogResult.OK)
+            {
+                while (checkFile(res.inputValue.Item2) && res.closeOperation == DialogResult.OK)
+                {
+                    res = Prompt.ShowDialog("File path does not exist! Enter again:", title, false, i == int.MaxValue ? DATA.MainServer : DATA.CloneServers[i]);
+                }
+                if (res.closeOperation == DialogResult.OK)
+                {
+                    if (i == int.MaxValue) DATA.MainServer = res.inputValue;
+                    else DATA.CloneServers[i] = res.inputValue;
+                    (sender as Button).Text = res.inputValue.Item1;
+                    DATA.Save();
+                }
+            }
+        }
+
+
+        private static bool checkFile(string path)
+        {
+            return (string.IsNullOrEmpty(path.Trim()) || !(new DirectoryInfo(path).Exists));
+        }
+
+        private static bool filesOK(List<string> paths, out string failedPath)
+        {
+            foreach (string path in paths)
+                if (!(new DirectoryInfo(path).Exists))
+                {
+                    failedPath = path;
+                    return false;
+                }
+            failedPath = "";
+            return true;
         }
 
 
@@ -206,27 +236,27 @@ namespace LoadBalancerSyncronizer
         {
             try
             {
-                List<ApplicationSyncPath> paths = 
+                List<ApplicationSyncPath> paths =
                     Provider.Database.ReadList<ApplicationSyncPath>(
                         FilterExpression.Create("isSynced", CriteriaTypes.Eq, false).And("PublishTime", CriteriaTypes.Lt, DateTime.Now)
                     );
                 if (paths.Count != 0)
                 {
                     btnBackgroundSync.ThreadSafeInvoke(() => btnBackgroundSync.Enabled = false);
-                    double percentage = 0;
-                    setProggressBarTo(infoSyncStatusProgress, (int)percentage);
+                    ControlExtension.backgroundPercentage = 0;
+                    infoSyncStatusProgress.UpdateStatus(statusStrip1);
                     paths.ForEach(x =>
                     {
                         statusStripSafe(() => infoSyncStatusLabel.Text = "Syncing: " + x.path);
                         for (int i = 1; i < DATA.ServerRoots.Count; i++)
                         {
                             string serverPath = DATA.ServerRoots[i];
-                            percentage += 100.0 / (paths.Count * DATA.cloneServers.Length);
-                            setProggressBarTo(infoSyncStatusProgress, (int)percentage);
+                            ControlExtension.backgroundPercentage += 100.0 / (paths.Count * DATA.CloneServers.Count);
+                            infoSyncStatusProgress.UpdateStatus(statusStrip1);
                             if (!CopyFileFromFileToFile(DATA.ServerRoots[0] + x.path, serverPath + x.path, x))
                             {
                                 statusStripSafe(() => infoSyncStatusLabel.Text = "Failed!");
-                                break;
+                                continue;
                             }
                             statusStripSafe(() => infoSyncStatusLabel.Text = "Sync is done!");
                         }
@@ -238,16 +268,19 @@ namespace LoadBalancerSyncronizer
                             x.isSynced = true;
                             x.Save();
                         }
-                        
+
                     });
                     btnBackgroundSync.ThreadSafeInvoke(() => btnBackgroundSync.Enabled = true);
-                    statusStrip1.ThreadSafeInvoke(() => infoSyncStatusProgress.Value = 100);
+                    ControlExtension.backgroundPercentage = 100;
+                    infoSyncStatusProgress.UpdateStatus(statusStrip1);
                 }
                 else
                 {
-                    Task.Run(() => {
+                    Task.Run(() =>
+                    {
                         Thread.Sleep(5000);
                         statusStripSafe(() => infoSyncStatusLabel.Text = "No files to sync!");
+
                         statusStrip1.ThreadSafeInvoke(() => infoSyncStatusProgress.Value = 0);
                     });
                 }
@@ -260,7 +293,8 @@ namespace LoadBalancerSyncronizer
 
         }
 
-        private void statusStripSafe(MethodInvoker method) {
+        private void statusStripSafe(MethodInvoker method)
+        {
             statusStrip1.ThreadSafeInvoke(() => method.Invoke());
         }
 
@@ -283,28 +317,6 @@ namespace LoadBalancerSyncronizer
             return true;
         }
 
-        private void setProggressBarTo(ProgressBar progress, int value)
-        {
-            progress.ThreadSafeInvoke(() =>
-            {
-                if (value < 1) value = 1;
-                if (value > 100) value = 100;
-
-                initProgressBar(progress);
-                progress.Maximum = (int)((double)progress.Value / (double)(value) * 100);
-            });
-        }
-
-        private void initProgressBar(ProgressBar progress)
-        {
-            if (!isInitialized.Contains(progress.Name))
-            {
-                progress.Maximum *= 100;
-                progress.Value = progress.Maximum / 100;
-                isInitialized.Add(progress.Name);
-            }
-        }
-
 
 
         #endregion
@@ -312,6 +324,50 @@ namespace LoadBalancerSyncronizer
         #region Override whole main server to clones
 
 
+
+        private void StartCopyAll()
+        {
+            s.Reset();
+            s.Start();
+
+            InitializeUI();
+
+            //Get number of files to calculate percentage of process...
+            totalnumOfFiles = Directory.EnumerateFiles(DATA.MainServer.Item2, "*", SearchOption.AllDirectories).Count();
+
+            //Init for percentage
+            numOfprocessedFiles = 0;
+        }
+
+        private void InitializeUI()
+        {
+            resetButtonsBackColor();
+            setButtonsEnable(false);
+        }
+
+        private void TarMainServer()
+        {
+            infoTotalFilesCopied.ThreadSafeSetText("Started compressing.");
+            executeCommand("7z a -ttar " + DATA.MainServer.Item2 + compressedFileName +" " + DATA.MainServer.Item2 + "\\*");
+            infoProgressTotalFilesCopied.UpdateStatus();
+        }
+
+        private void extractTarFile(int index)
+        {
+            string command = "7z x -y " + DATA.CloneServers[index].Item2 + compressedFileName + " -o" + DATA.CloneServers[index].Item2 + " -r -aoa";
+            infoTotalFilesCopied.ThreadSafeSetText("Started extracting to: " + DATA.CloneServers[index].Item2);
+            executeCommand(command);
+            setServerCloneIsDoneColor(index);
+        }
+
+        private void StartCopy(int index)
+        {
+            numOfprocessedFiles = 0;
+            setServerCloneIsProcesingColor(index);
+            copyCompressedFile(DATA.CloneServers[index].Item2);
+            ControlExtension.percentage = 66;
+            infoProgressTotalFilesCopied.UpdateStatus();
+        }
 
         private void EndCopyAll()
         {
@@ -321,36 +377,12 @@ namespace LoadBalancerSyncronizer
             Finish();
         }
 
-        private void RemoveTarFileFromMainServer()
+        private void CreateOutput()
         {
-            File.Delete(DATA.mainServer + compressedFileName);
-        }
-
-        private void StartCopyAll()
-        {
-            s.Reset();
-            s.Start();
-
-            InitializeUI();
-            TarMainServer();
-
-            //When files are archived into TAR in main server,
-            //take the count. So that when its extracted, 
-            //percentage will be calculatable.
-            numOfArchivedFile = fileNames.Count;
-        }
-
-        private void Finish()
-        {
-            s.Stop();
-            infoTotalFilesCopied.ThreadSafeSetText("Completed in " + TimeSpan.FromMilliseconds(s.ElapsedMilliseconds).Seconds + " second/s.");
-
-            Task.Run(() =>
-            {
-                Thread.Sleep(1000);
-                setButtonsEnable(true);
-                resetButtonsBackColor();
-            });
+            //TODO: file lari ust uste yazdirma listeyi UI da goster.
+            string outputFileName = "output" + ServerId + ".txt";
+            infoFilesOverriden.ThreadSafeInvoke(() => infoFilesOverriden.Text = "Output file:\r\n" + AppDomain.CurrentDomain.BaseDirectory + outputFileName);
+            File.WriteAllLines(outputFileName, fileNames);
         }
 
         private void CreateErrorFileIfAny()
@@ -364,37 +396,28 @@ namespace LoadBalancerSyncronizer
             }
         }
 
-        private void CreateOutput()
+        private void RemoveTarFileFromMainServer()
         {
-            //TODO: file lari ust uste yazdirma listeyi UI da goster.
-            string outputFileName = "output"+ServerId+".txt";
-            infoFilesOverriden.ThreadSafeInvoke(() => infoFilesOverriden.Text = "Output file:\r\n" + AppDomain.CurrentDomain.BaseDirectory + outputFileName);
-            File.WriteAllLines(outputFileName, fileNames);
+            File.Delete(DATA.MainServer.Item2 + compressedFileName);
         }
 
-        private void ExtractToCloneServer(int i)
+        private void Finish()
         {
-            string command = "7z x -y " + DATA.cloneServers[i] + "\\files.tar -o" + DATA.cloneServers[i] + " -r -aoa";
-            tempNumOfArchivedFile = 0;
-            setProggressBarTo(infoProgressTotalFilesCopied, 0);
-            setServerCloneIsProcesingColor(i);
-            copyZippedFile(DATA.cloneServers[i]);
-            infoTotalFilesCopied.ThreadSafeSetText("Started extracting to: " + DATA.cloneServers[i]);
-            executeCommand(command);
-            setServerCloneIsDoneColor(i);
+            s.Stop();
+            infoTotalFilesCopied.ThreadSafeSetText("Completed in " + TimeSpan.FromMilliseconds(s.ElapsedMilliseconds).Seconds + " second/s.");
+
+            //Last Checkpoint for status bar
+            ControlExtension.percentage = 100;
+            infoProgressTotalFilesCopied.UpdateStatus();
+
+            Task.Run(() =>
+            {
+                Thread.Sleep(1000);
+                setButtonsEnable(true);
+                resetButtonsBackColor();
+            });
         }
 
-        private void TarMainServer()
-        {
-            infoTotalFilesCopied.ThreadSafeSetText("Started compressing.");
-            executeCommand("7z a -ttar " + DATA.mainServer + "\\files.tar " + DATA.mainServer + "\\*", true);
-        }
-
-        private void InitializeUI()
-        {
-            resetButtonsBackColor();
-            setButtonsEnable(false);
-        }
 
 
         #endregion
@@ -403,7 +426,7 @@ namespace LoadBalancerSyncronizer
 
 
 
-        private void executeCommand(string withCommand, bool isOutput = false)
+        private void executeCommand(string withCommand)
         {
             string exec = withCommand.Split(' ').First();
             // Use ProcessStartInfo class
@@ -417,7 +440,7 @@ namespace LoadBalancerSyncronizer
             startInfo.RedirectStandardInput = true;
             startInfo.RedirectStandardOutput = true;
             startInfo.CreateNoWindow = true;
-            tempNumOfArchivedFile = 0;
+            numOfprocessedFiles = 0;
 
             try
             {
@@ -450,13 +473,17 @@ namespace LoadBalancerSyncronizer
 
         private void exeProcess_ErrorDataReceived(object sender, DataReceivedEventArgs e)
         {
+            numOfprocessedFiles++;
+            ControlExtension.percentage = percentageCheckPoint + (int)((numOfprocessedFiles / totalnumOfFiles) * percentageStop);
+            infoProgressTotalFilesCopied.UpdateStatus();
             errorLines.Add(e.Data);
         }
 
         private void exeProcess_OutputDataReceived(object sender, DataReceivedEventArgs e)
         {
-            tempNumOfArchivedFile++;
-            setProggressBarTo(infoProgressTotalFilesCopied, (int)((tempNumOfArchivedFile / numOfArchivedFile) * 50) + 50);
+            numOfprocessedFiles++;
+            ControlExtension.percentage = percentageCheckPoint + (int)((numOfprocessedFiles / totalnumOfFiles) * percentageStop);
+            infoProgressTotalFilesCopied.UpdateStatus();
             fileNames.Add(e.Data);
         }
 
@@ -468,10 +495,10 @@ namespace LoadBalancerSyncronizer
 
 
 
-        private void copyZippedFile(string toDirectory)
+        private void copyCompressedFile(string toDirectory)
         {
 
-            string srcName = DATA.mainServer + compressedFileName;
+            string srcName = DATA.MainServer.Item2 + compressedFileName;
             string destName = toDirectory + compressedFileName;
             FileInfo sourceFile = new FileInfo(srcName);
             int buflen = 4 * 1024 * 1024; //4 MB buffer
@@ -486,19 +513,17 @@ namespace LoadBalancerSyncronizer
                 {
                     while (true)
                     {
-                        int totalPercentage = 50;
                         numReads++;
                         int bytesRead = sourceStream.Read(buf, 0, buflen);
                         if (bytesRead == 0) break;
                         destStream.Write(buf, 0, bytesRead);
 
                         totalBytesRead += bytesRead;
-                        if (numReads % 10 == 0)
-                        {
-                            pctDone = (double)((double)totalBytesRead / (double)sourceFile.Length) * totalPercentage;
-                            infoTotalFilesCopied.ThreadSafeSetText("Copying to directory: " + toDirectory + ", " + (int)pctDone + "% done!");
-                            infoProgressTotalFilesCopied.ThreadSafeInvoke(() => setProggressBarTo(infoProgressTotalFilesCopied, (int)pctDone + 1));
-                        }
+                        
+                        pctDone = (double)(((double)totalBytesRead / (double)sourceFile.Length) * percentageStop);
+                        infoTotalFilesCopied.ThreadSafeSetText("Copying to directory: " + toDirectory + ", " + (int)pctDone * (100/percentageStop) + "% done!");
+                        ControlExtension.percentage = percentageCheckPoint + (int)pctDone;
+                        infoProgressTotalFilesCopied.UpdateStatus();
 
                         if (bytesRead < buflen) break;
 
@@ -570,28 +595,6 @@ namespace LoadBalancerSyncronizer
             Task.Run(() => MessageBox.Show(message, "Asynchronous Message"));
         }
 
-        private void setProggressBarTo(ToolStripProgressBar progress, int value)
-        {
-            statusStrip1.ThreadSafeInvoke(() => {
-                if (value < 1) value = 1;
-                if (value > 100) value = 100;
-
-                initProgressBar(progress);
-                progress.Maximum = (int)((double)progress.Value / (double)(value) * 100);
-            });
-        }
-
-        private void initProgressBar(ToolStripProgressBar progress)
-        {
-            if (!isInitialized.Contains(progress.Name))
-            {
-                progress.Maximum *= 100;
-                progress.Value = progress.Maximum / 100;
-                isInitialized.Add(progress.Name);
-            }
-        }
-
-
 
         #endregion
     }
@@ -599,6 +602,11 @@ namespace LoadBalancerSyncronizer
     #region Control Extentions
     public static class ControlExtension
     {
+
+        private static List<string> isInitialized = new List<string>();
+        public static double percentage;
+        public static double backgroundPercentage;
+
 
         private delegate void AppendText(Control control, string text);
         private static void Append(this Control control, string text)
@@ -678,6 +686,80 @@ namespace LoadBalancerSyncronizer
                 {
                     handler.Invoke(control, text);
                 }
+            }
+        }
+
+        public static void addPlaceHolder(this TextBox txtBox, string placeholder)
+        {
+            txtBox.Tag = placeholder;
+
+            //init if empty string
+            if (txtBox.Text == "")
+            {
+                txtBox.ForeColor = Color.Gray;
+                txtBox.Text = txtBox.Tag.ToString();
+            }
+
+            txtBox.GotFocus += (sender, e) =>
+            {
+                if (txtBox.Text == txtBox.Tag.ToString())
+                {
+                    txtBox.ForeColor = Color.Black;
+                    txtBox.Text = "";
+                }
+            };
+
+            txtBox.LostFocus += (sender, e) =>
+            {
+                if (txtBox.Text == "")
+                {
+                    txtBox.ForeColor = Color.Gray;
+                    txtBox.Text = txtBox.Tag.ToString();
+                }
+            };
+        }
+
+        public static void UpdateStatus(this ProgressBar progress)
+        {
+            progress.ThreadSafeInvoke(() =>
+            {
+                if (percentage < 1) percentage = 1;
+                if (percentage > 100) percentage = 100;
+
+                progress.initProgressBar();
+                progress.Maximum = (int)((double)progress.Value / (double)(percentage) * 100);
+            });
+        }
+
+        public static void initProgressBar(this ProgressBar progress)
+        {
+            if (!isInitialized.Contains(progress.Name))
+            {
+                progress.Maximum *= 100;
+                progress.Value = progress.Maximum / 100;
+                isInitialized.Add(progress.Name);
+            }
+        }
+
+        public static void UpdateStatus(this ToolStripProgressBar progress, StatusStrip s)
+        {
+            s.ThreadSafeInvoke(() =>
+            {
+                if (backgroundPercentage < 1) backgroundPercentage = 1;
+                if (backgroundPercentage > 100) backgroundPercentage = 100;
+
+                initProgressBar(progress);
+                progress.Maximum = (int)((double)progress.Value / (double)(backgroundPercentage) * 100);
+            });
+        }
+
+        public static void initProgressBar(this ToolStripProgressBar progress)
+        {
+            if (!isInitialized.Contains(progress.Name))
+            {
+                progress.Maximum *= 100;
+                progress.Value = progress.Maximum / 100;
+                isInitialized.Add(progress.Name);
             }
         }
     }

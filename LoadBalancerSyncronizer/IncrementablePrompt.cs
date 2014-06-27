@@ -14,6 +14,7 @@ namespace LoadBalancerSyncronizer
     using System.Text;
     using System.Threading.Tasks;
     using System.Windows.Forms;
+    using System.Drawing;
 
     public static class IncrementablePrompt
     {
@@ -66,8 +67,6 @@ namespace LoadBalancerSyncronizer
             }
             while (i < defaultInputValues.Count);
 
-            list.Focus();
-
             prompt.AcceptButton = btnConfirmation;
             IncrementablePromptResult res = new IncrementablePromptResult();
             res.closeOperation = prompt.ShowDialog();
@@ -83,6 +82,7 @@ namespace LoadBalancerSyncronizer
         private static void addTextBox(this ListView list, Form prmpt, Button add, Button conf, Button remove, string defVal = "")
         {
             list.BeginUpdate();
+
             TextBox txtBox = null;
             if (list.Controls.Count > 0)
             {
@@ -90,14 +90,21 @@ namespace LoadBalancerSyncronizer
             }
             int lastTxtBoxHeight = txtBox != null ? txtBox.Height + 10 : 0;
             int lastTxtBoxTop = txtBox != null ? txtBox.Top : 0;
+
             TextBox textBox = new TextBox() { Top = lastTxtBoxTop + lastTxtBoxHeight, Width = 400, Text = defVal };
             textBox.KeyPress += prompt_KeyPress;
             list.Controls.Add(textBox);
+
             list.Height += lastTxtBoxHeight == 0 ? 20 : lastTxtBoxHeight;
             prmpt.Height += lastTxtBoxHeight;
+
             add.Top += lastTxtBoxHeight;
             remove.Top += lastTxtBoxHeight;
             conf.Top += lastTxtBoxHeight;
+
+            if (conf.Top == 75) textBox.addPlaceHolder("Enter main server path..");
+            textBox.Focus();
+
             list.EndUpdate();
         }
 
@@ -132,9 +139,11 @@ namespace LoadBalancerSyncronizer
         {
             if (e.KeyChar == (char)27)
             {
+                Form.ActiveForm.DialogResult = DialogResult.Cancel;
                 Form.ActiveForm.Close();
             }
         }
+
     }
     public class IncrementablePromptResult
     {

@@ -72,7 +72,6 @@
     </Compile>
     <Compile Include="FileSerializer.cs" />
     <Compile Include="IncrementablePrompt.cs" />
-    <Compile Include="IncrementablePromptResult.cs" />
     <Compile Include="Path.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Prompt.cs" />
