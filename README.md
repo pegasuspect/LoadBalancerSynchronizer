@@ -1,7 +1,7 @@
 Load Balancer Syncronizer
 ==============
 
-What it is?
+What is it?
 --------------
 It's simply a file syncronizing program where you have couple of servers/files to sync.
 These files can be in different machines but they should be linked in one server as a shared folder.
