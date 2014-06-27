@@ -45,13 +45,15 @@ How To Use
   Right click any button for overriding contents from main folder to target folder.
 - Override does not empty the folder only overrides the files with same name.
 
+How It Works
+--------------
 - `Main Dir` button denotes, path to copy from.
 - `Override Dir` buttons are for overriding to those directories.
 
 ###### If you want to use background syncronization;
 - `DB Settings` button is for those who want to sync server files from database.
   - Background operation is checking **ApplicationSyncPath** table every 10 seconds.
-  - It syncs paths with isSycned set to false/0 and PublishDate is over due.
+  - It syncs paths of which isSycned property is set to false/0 and PublishDate property is over due.
 - `Sync via Server Root Paths` button works as follows:
 
   TextBoxes are for server roots `ie. *C:\wamp\www*`.
