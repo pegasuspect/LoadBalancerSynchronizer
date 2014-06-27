@@ -15,7 +15,7 @@ Dependesies
 Prerequisites
 --------------
 - 7zip: 
-  Needs to be downloaded and placed in **bin** forder with **7zip** filename. The path to 7zip should look like ...\bin\Release\7-Zip or ...\bin\Debug\7-Zip
+  Needs to be downloaded and placed in **bin\Debug** or **bin\Release** forder with **7-Zip** filename. The path to 7zip should look like ...\bin\Release\7-Zip or ...\bin\Debug\7-Zip
 
 ###### If you want to use background syncronization;
 - A database connection(can be SQLServer or MySql) and a table: 
@@ -40,10 +40,13 @@ How To Install
 
 How To Use
 --------------
-After opening the application, click on the buttons to setup paths of each director for override operation.
+- After opening the application, click on the buttons to setup paths of each directory.
 
-`Main Dir` button denotes, path to copy from.
-`Override Dir` buttons are for overriding to those directories.
+  Right click any button for overriding contents from main folder to target folder.
+- Override does not empty the folder only overrides the files with same name.
+
+- `Main Dir` button denotes, path to copy from.
+- `Override Dir` buttons are for overriding to those directories.
 
 ###### If you want to use background syncronization;
 - `DB Settings` button is for those who want to sync server files from database.
