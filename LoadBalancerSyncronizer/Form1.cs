@@ -219,7 +219,9 @@ namespace LoadBalancerSyncronizer
             foreach (string path in paths)
                 if (!(new DirectoryInfo(path).Exists))
                 {
-                    failedPath = path;
+                    if (path == "Enter main server path..")
+                        failedPath = "";
+                    else failedPath = path;
                     return false;
                 }
             failedPath = "";
