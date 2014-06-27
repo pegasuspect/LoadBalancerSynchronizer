@@ -33,6 +33,18 @@ namespace LoadBalancerSyncronizer
             DATA = FileSerializer.Load();
             InitializeComponent();
 
+            if (DATA.ConnectionString == null) DATA.ConnectionString = new Tuple<string, string>("DB Connection", "");
+
+            if (DATA.CloneServers == null || DATA.CloneServers.Count == 0)
+                DATA.CloneServers = new List<Tuple<string, string>>() { 
+                    new Tuple<string, string>("1st Override Dir",""),
+                    new Tuple<string, string>("2nd Override Dir",""),
+                    new Tuple<string, string>("3rd Override Dir",""),
+                    new Tuple<string, string>("4th Override Dir","")
+                };
+
+            if (DATA.MainServer == null) DATA.MainServer = new Tuple<string, string>("Main Dir", "");
+
             //init button names..
             btnDbSettings.Text = DATA.ConnectionString.Item1;
             btnClone1Settings.Text = DATA.CloneServers[0].Item1;
@@ -458,7 +470,7 @@ namespace LoadBalancerSyncronizer
                     exeProcess.BeginOutputReadLine();
                     exeProcess.BeginErrorReadLine();
 
-                    exeProcess.StandardInput.WriteLine("cd 7zip");
+                    exeProcess.StandardInput.WriteLine("cd 7-Zip");
                     exeProcess.StandardInput.WriteLine(withCommand);
                     exeProcess.StandardInput.WriteLine("exit");
                     exeProcess.WaitForExit();
@@ -594,6 +606,7 @@ namespace LoadBalancerSyncronizer
         {
             Task.Run(() => MessageBox.Show(message, "Asynchronous Message"));
         }
+
 
 
         #endregion

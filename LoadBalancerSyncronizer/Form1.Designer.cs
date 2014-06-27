@@ -118,7 +118,7 @@
             this.btnBackgroundSync.Name = "btnBackgroundSync";
             this.btnBackgroundSync.Size = new System.Drawing.Size(218, 55);
             this.btnBackgroundSync.TabIndex = 5;
-            this.btnBackgroundSync.Text = "Background Sync Server Roots";
+            this.btnBackgroundSync.Text = "Sync via Server Root Paths";
             this.btnBackgroundSync.UseVisualStyleBackColor = true;
             this.btnBackgroundSync.Click += new System.EventHandler(this.btnBackgroundSync_Click);
             // 

@@ -49,7 +49,6 @@ namespace LoadBalancerSyncronizer
 
         public Tuple<string, string> ConnectionString { get; set; }
 
-        private DatabaseProvider _connType;
         public DatabaseProvider ConnectionType { get; set; }
 
         public void Save()
