@@ -50,7 +50,7 @@ How To Use
 
   ![Override completed.](../../raw/master/LoadBalancerSynchronizer/ScreenShots/Untitled-1.png)
 
-How It Works
+How Does It Work
 --------------
 - `Main Dir` button denotes, path to copy from.
 - `Override Dir` buttons are for overriding to those directories: First files are zipped into tar format, then copied in big chunks(4MB), then extracted at the target folder.
