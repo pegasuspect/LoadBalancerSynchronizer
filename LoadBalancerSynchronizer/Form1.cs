@@ -83,7 +83,7 @@ namespace LoadBalancerSynchronizer
                 //Get server Id from right clicked button
                 ServerId = DATA.CloneServers.Select(x => x.Item1).IndexOf(x => x == cms.Name);
 
-                StartCopyAll();
+                StartCopyAll(ServerId);
 
                 //Checkpoint 1
                 ControlExtension.percentage = percentageCheckPoint = 0;
@@ -339,13 +339,12 @@ namespace LoadBalancerSynchronizer
 
 
 
-        private void StartCopyAll()
+        private void StartCopyAll(int index)
         {
             s.Reset();
             s.Start();
 
-            InitializeUI();
-
+            InitializeUI(index);
             //Get number of files to calculate percentage of process...
             totalnumOfFiles = Directory.EnumerateFiles(DATA.MainServer.Item2, "*", SearchOption.AllDirectories).Count();
 
@@ -353,9 +352,10 @@ namespace LoadBalancerSynchronizer
             numOfprocessedFiles = 0;
         }
 
-        private void InitializeUI()
+        private void InitializeUI(int index)
         {
             resetButtonsBackColor();
+            setServerCloneIsProcesingColor(index);
             setButtonsEnable(false);
         }
 
@@ -377,7 +377,6 @@ namespace LoadBalancerSynchronizer
         private void StartCopy(int index)
         {
             numOfprocessedFiles = 0;
-            setServerCloneIsProcesingColor(index);
             copyCompressedFile(DATA.CloneServers[index].Item2);
             ControlExtension.percentage = 66;
             infoProgressTotalFilesCopied.UpdateStatus();
