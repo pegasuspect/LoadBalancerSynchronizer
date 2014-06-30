@@ -1,7 +1,7 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 2012
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LoadBalancerSyncronizer", "LoadBalancerSyncronizer\LoadBalancerSyncronizer.csproj", "{754217F4-6E59-4A08-9359-C4323F2964AE}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LoadBalancerSynchronizer", "LoadBalancerSyncronizer\LoadBalancerSynchronizer.csproj", "{754217F4-6E59-4A08-9359-C4323F2964AE}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
