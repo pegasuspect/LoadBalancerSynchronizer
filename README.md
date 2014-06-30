@@ -43,14 +43,17 @@ How To Use
 - When application is launched, click on the buttons to setup paths of each directory.
 
   Right click any button for overriding contents from main folder to target folder.
-- Override does not empty the folder only overrides the files with the same name.
+  ![Override right click.](../../raw/master/LoadBalancerSynchronizer/ScreenShots/Untitled-2.png)
+  
+- Override does not empty the target folder only overrides the files with the same name.
+  ![Override copying.](../../raw/master/LoadBalancerSynchronizer/ScreenShots/Untitled-3.png)
+
+  ![Override completed.](../../raw/master/LoadBalancerSynchronizer/ScreenShots/Untitled-1.png)
 
 How It Works
 --------------
 - `Main Dir` button denotes, path to copy from.
 - `Override Dir` buttons are for overriding to those directories: First files are zipped into tar format, then copied in big chunks(4MB), then extracted at the target folder.
-
-
 
 ###### If you want to use background syncronization;
 - `DB Settings` button is for those who want to sync server files from database.
@@ -58,8 +61,8 @@ How It Works
   - It syncs paths of which isSycned property is set to false/0 and PublishDate property is over due.
 - `Sync via Server Root Paths` button works as follows:
 
-  TextBoxes are for server roots `ie. *C:\wamp\www*`.
+  TextBoxes are for server roots *ie. C:\wamp\www*.
   - First textbox is your main server. 
-  - It's relative paths `ie */images/logo.png*` in **ApplicationSyncPath** table 
+  - It's relative paths *ie /images/logo.png* in **ApplicationSyncPath** table 
     will be to copied to other textboxes' directories.
   - Other TextBoxes are for your other servers root paths, to override to.
