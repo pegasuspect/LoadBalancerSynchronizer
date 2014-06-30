@@ -1,4 +1,4 @@
-﻿namespace LoadBalancerSyncronizer
+﻿namespace LoadBalancerSynchronizer
 {
     partial class Form1
     {

@@ -7,7 +7,7 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 
-namespace LoadBalancerSyncronizer
+namespace LoadBalancerSynchronizer
 {
     public static class Provider
     {

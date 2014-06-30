@@ -3,9 +3,9 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using LoadBalancerSyncronizer;
+using LoadBalancerSynchronizer;
 
-namespace LoadBalancerSyncronizer
+namespace LoadBalancerSynchronizer
 {
     using Cinar.Database;
     using System;

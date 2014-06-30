@@ -7,8 +7,8 @@
     <ProjectGuid>{754217F4-6E59-4A08-9359-C4323F2964AE}</ProjectGuid>
     <OutputType>WinExe</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
-    <RootNamespace>LoadBalancerSyncronizer</RootNamespace>
-    <AssemblyName>LoadBalancerSyncronizer</AssemblyName>
+    <RootNamespace>LoadBalancerSynchronizer</RootNamespace>
+    <AssemblyName>LoadBalancerSynchronizer</AssemblyName>
     <TargetFrameworkVersion>v4.5</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
   </PropertyGroup>
@@ -88,6 +88,7 @@
     <Compile Include="Properties\Resources.Designer.cs">
       <AutoGen>True</AutoGen>
       <DependentUpon>Resources.resx</DependentUpon>
+      <DesignTime>True</DesignTime>
     </Compile>
     <None Include="Properties\Settings.settings">
       <Generator>SettingsSingleFileGenerator</Generator>
