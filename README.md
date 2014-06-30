@@ -3,23 +3,23 @@ Load Balancer Syncronizer
 
 What is it?
 --------------
-It's simply a file syncronizing program where you have couple of servers/files to sync.
+It's simply a file synchronizing program where you have couple of servers/files to sync.
 These files can be in different machines but they should be linked in one server as a shared folder.
 
 Provides a background override operation with check to a database table consists of a path, sync status and publish time.
 
-Dependesies
+Dependencies
 --------------
-7-Zip.exe [LISENCE](http://www.7-zip.org/license.txt)
+7-Zip.exe [LICENCE](http://www.7-zip.org/license.txt)
 
 Prerequisites
 --------------
 - 7zip: 
-  Needs to be downloaded and placed in **bin\Debug** or **bin\Release** forder with **7-Zip** filename. The path to 7zip should look like ...\bin\Release\7-Zip or ...\bin\Debug\7-Zip
+  Needs to be downloaded and placed in **bin\Debug** or **bin\Release** folder with **7-Zip** filename. The path to 7-Zip should look like ...\bin\Release\7-Zip or ...\bin\Debug\7-Zip
 
-###### If you want to use background syncronization;
-- A database connection(can be SQLServer or MySql) and a table: 
-The table that is use for file checks is named **ApplicationSyncPath** and its columns are as follows:
+###### If you want to use background synchronization;
+- A database connection(can be SQLServer or MySql) and a table:
+The table that is used for file checks is named **ApplicationSyncPath** and its columns are as follows:
 
   | Field Name        | Type        |
   | ------------      | :----:        |
@@ -34,21 +34,23 @@ The table that is use for file checks is named **ApplicationSyncPath** and its c
 How To Install
 --------------
 1. Download 7-zip either from [FileHippo](http://filehippo.com/search?q=7zip "7-Zip FileHippo") or from [7-Zip.org](http://www.7-zip.org/download.html "7-Zip.org") and install 7-Zip.
-2. Place your installed **7-Zip** folder either in **bin/Debug** directory or in **bin/Release** directory of the project.    Depending on which mode you are running your application in Visual Studio.
+2. Place your installed **7-Zip** folder either in **bin/Debug** directory or in **bin/Release** directory of the project.    *Depending on which mode you are running your application in Visual Studio.*
 3. Open the solution in Visual Studio, then from the menu *Build* > *Rebuild Solution*
 4. Open the **bin/Debug** or **bin/Release** directory of the project, and run **LoadBalancerSyncronizer.exe**
 
 How To Use
 --------------
-- After opening the application, click on the buttons to setup paths of each directory.
+- When application is launched, click on the buttons to setup paths of each directory.
 
   Right click any button for overriding contents from main folder to target folder.
-- Override does not empty the folder only overrides the files with same name.
+- Override does not empty the folder only overrides the files with the same name.
 
 How It Works
 --------------
 - `Main Dir` button denotes, path to copy from.
-- `Override Dir` buttons are for overriding to those directories.
+- `Override Dir` buttons are for overriding to those directories: First files are zipped into tar format, then copied in big chunks(4MB), then extracted at the target folder.
+
+
 
 ###### If you want to use background syncronization;
 - `DB Settings` button is for those who want to sync server files from database.
