@@ -394,7 +394,7 @@ namespace LoadBalancerSynchronizer
         private void CreateOutput()
         {
             //TODO: file lari ust uste yazdirma listeyi UI da goster.
-            string outputFileName = "output" + ServerId + ".txt";
+            string outputFileName = "output" + (ServerId + 1) + ".txt";
             infoFilesOverriden.ThreadSafeInvoke(() => infoFilesOverriden.Text = "Output file:\r\n" + AppDomain.CurrentDomain.BaseDirectory + outputFileName);
             File.WriteAllLines(outputFileName, fileNames);
         }
@@ -403,7 +403,7 @@ namespace LoadBalancerSynchronizer
         {
             if (!string.IsNullOrWhiteSpace(errorLines.StringJoin().Trim()))
             {
-                string errorFileName = "error" + ServerId + ".txt";
+                string errorFileName = "error" + (ServerId + 1) + ".txt";
                 infoFilesOverriden.ThreadSafePrependText("Errors occured and stored at:" + Environment.NewLine
                     + AppDomain.CurrentDomain.BaseDirectory + errorFileName + Environment.NewLine);
                 File.WriteAllLines(errorFileName, errorLines);
@@ -535,7 +535,7 @@ namespace LoadBalancerSynchronizer
                         totalBytesRead += bytesRead;
                         
                         pctDone = (double)(((double)totalBytesRead / (double)sourceFile.Length) * percentageStop);
-                        infoTotalFilesCopied.ThreadSafeSetText("Copying to directory: " + toDirectory + ", " + (int)pctDone * (100/percentageStop) + "% done!");
+                        infoTotalFilesCopied.ThreadSafeSetText("Copying to directory: " + toDirectory + ", " + (int)(pctDone * (100/percentageStop)) + "% done!");
                         ControlExtension.percentage = percentageCheckPoint + (int)pctDone;
                         infoProgressTotalFilesCopied.UpdateStatus();
 
