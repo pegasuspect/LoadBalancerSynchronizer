@@ -18,7 +18,7 @@ namespace LoadBalancerSynchronizer
     {
         public static API DATA;
 
-        public Stopwatch s = new Stopwatch();
+        public Stopwatch timer = new Stopwatch();
         private const string compressedFileName = "\\files.tar";
         private List<string> fileNames = new List<string>();
         private List<string> errorLines = new List<string>();
@@ -123,10 +123,11 @@ namespace LoadBalancerSynchronizer
                 //run background operation
                 if (checkDatabaseForFileChanges.IsBusy)
                     checkDatabaseForFileChanges.CancelAsync();
-                Task.Run(() => {
+                Task.Run(() =>
+                {
                     while (checkDatabaseForFileChanges.CancellationPending)
                         Thread.Sleep(100);
-                        checkDatabaseForFileChanges.RunWorkerAsync();
+                    checkDatabaseForFileChanges.RunWorkerAsync();
                 });
             }
         }
@@ -188,7 +189,7 @@ namespace LoadBalancerSynchronizer
         {
             promptServerAddress("Server Clone 4 Settings", 3, sender);
         }
-        
+
         private static void promptServerAddress(string title, int i = int.MaxValue, object sender = null)
         {
             PromptResult res = Prompt.ShowDialog("Enter server root path:", title, false, i == int.MaxValue ? DATA.MainServer : DATA.CloneServers[i]);
@@ -341,8 +342,8 @@ namespace LoadBalancerSynchronizer
 
         private void StartCopyAll(int index)
         {
-            s.Reset();
-            s.Start();
+            timer.Reset();
+            timer.Start();
 
             InitializeUI(index);
             //Get number of files to calculate percentage of process...
@@ -362,8 +363,8 @@ namespace LoadBalancerSynchronizer
         private void TarMainServer()
         {
             infoTotalFilesCopied.ThreadSafeSetText("Started compressing.");
-            executeCommand("7z a -ttar " + DATA.MainServer.Item2 + compressedFileName +" " + DATA.MainServer.Item2 + "\\*");
-            infoProgressTotalFilesCopied.UpdateStatus();
+            executeCommand("7z a -ttar " + DATA.MainServer.Item2 + compressedFileName + " " + DATA.MainServer.Item2 + "\\*");
+            infoProgressTotalFilesCopied.UpdateBarValue();
         }
 
         private void extractTarFile(int index)
@@ -379,7 +380,7 @@ namespace LoadBalancerSynchronizer
             numOfprocessedFiles = 0;
             copyCompressedFile(DATA.CloneServers[index].Item2);
             ControlExtension.percentage = 66;
-            infoProgressTotalFilesCopied.UpdateStatus();
+            infoProgressTotalFilesCopied.UpdateBarValue();
         }
 
         private void EndCopyAll()
@@ -416,12 +417,12 @@ namespace LoadBalancerSynchronizer
 
         private void Finish()
         {
-            s.Stop();
-            infoTotalFilesCopied.ThreadSafeSetText("Completed in " + TimeSpan.FromMilliseconds(s.ElapsedMilliseconds).Seconds + " second/s.");
+            timer.Stop();
+            infoTotalFilesCopied.ThreadSafeSetText("Completed in " + TimeSpan.FromMilliseconds(timer.ElapsedMilliseconds).Seconds + " second/s.");
 
             //Last Checkpoint for status bar
             ControlExtension.percentage = 100;
-            infoProgressTotalFilesCopied.UpdateStatus();
+            infoProgressTotalFilesCopied.UpdateBarValue();
 
             Task.Run(() =>
             {
@@ -488,7 +489,7 @@ namespace LoadBalancerSynchronizer
         {
             numOfprocessedFiles++;
             ControlExtension.percentage = percentageCheckPoint + (int)((numOfprocessedFiles / totalnumOfFiles) * percentageStop);
-            infoProgressTotalFilesCopied.UpdateStatus();
+            infoProgressTotalFilesCopied.UpdateBarValue();
             errorLines.Add(e.Data);
         }
 
@@ -496,7 +497,7 @@ namespace LoadBalancerSynchronizer
         {
             numOfprocessedFiles++;
             ControlExtension.percentage = percentageCheckPoint + (int)((numOfprocessedFiles / totalnumOfFiles) * percentageStop);
-            infoProgressTotalFilesCopied.UpdateStatus();
+            infoProgressTotalFilesCopied.UpdateBarValue();
             fileNames.Add(e.Data);
         }
 
@@ -519,28 +520,61 @@ namespace LoadBalancerSynchronizer
             long totalBytesRead = 0;
             double pctDone = 0;
             int numReads = 0;
-
-            using (FileStream sourceStream = new FileStream(srcName, FileMode.Open, FileAccess.Read))
+            try
             {
-                using (FileStream destStream = new FileStream(destName, FileMode.Create, FileAccess.Write))
+                using (FileStream sourceStream = new FileStream(srcName, FileMode.Open, FileAccess.Read))
                 {
-                    while (true)
+                    using (FileStream destStream = new FileStream(destName, FileMode.Create, FileAccess.Write))
                     {
-                        numReads++;
-                        int bytesRead = sourceStream.Read(buf, 0, buflen);
-                        if (bytesRead == 0) break;
-                        destStream.Write(buf, 0, bytesRead);
+                        while (true)
+                        {
+                            numReads++;
+                            int bytesRead = sourceStream.Read(buf, 0, buflen);
+                            if (bytesRead == 0) break;
+                            destStream.Write(buf, 0, bytesRead);
 
-                        totalBytesRead += bytesRead;
-                        
-                        pctDone = (double)(((double)totalBytesRead / (double)sourceFile.Length) * percentageStop);
-                        infoTotalFilesCopied.ThreadSafeSetText("Copying to directory: " + toDirectory + ", " + (int)(pctDone * (100/percentageStop)) + "% done!");
-                        ControlExtension.percentage = percentageCheckPoint + (int)pctDone;
-                        infoProgressTotalFilesCopied.UpdateStatus();
+                            totalBytesRead += bytesRead;
 
-                        if (bytesRead < buflen) break;
+                            pctDone = (double)(((double)totalBytesRead / (double)sourceFile.Length) * percentageStop);
+                            infoTotalFilesCopied.ThreadSafeSetText("Copying to directory: " + toDirectory + ", " + (int)(pctDone * (100 / percentageStop)) + "% done!");
+                            ControlExtension.percentage = percentageCheckPoint + (int)pctDone;
+                            infoProgressTotalFilesCopied.UpdateBarValue();
 
+                            if (bytesRead < buflen) break;
+
+                        }
                     }
+                }
+
+            }
+            catch (FileNotFoundException e)
+            {
+                timer.Stop();
+                //if we couldn't compress the main server
+                if (e.FileName.EndsWith("files.tar"))
+                {
+                    //if the reason for compression fail is,
+                    // 7-Zip not being placed in bin folder correctly
+                    string file = Path.GetFullPath("7-Zip\\7z.exe");
+                    string dir = "";
+                    if (!File.Exists(file))
+                    {
+                        if (file.Contains("Debug")) dir = "bin\\Debug";
+                        if (file.Contains("Release")) dir = "bin\\Release";
+
+
+                        string url = "https://github.com/pegasuspect/LoadBalancerSynchronizer#how-to-install";
+                        string messageText = "7-Zip i indirip " + dir + " içine koyduğunuzdan emin olun." + Environment.NewLine +
+                            Environment.NewLine +
+                            "Dosya bulunamadı: " + file;
+
+                        if (MessageBox.Show(messageText, "7-Zip Bulunamadı", MessageBoxButtons.OKCancel) == DialogResult.OK)
+                            System.Diagnostics.Process.Start(url);
+                    }
+                }
+                else
+                {
+                    MessageBox.Show(e.Message);
                 }
             }
         }
@@ -733,15 +767,12 @@ namespace LoadBalancerSynchronizer
             };
         }
 
-        public static void UpdateStatus(this ProgressBar progress)
+        public static void UpdateBarValue(this ProgressBar progress)
         {
             progress.ThreadSafeInvoke(() =>
             {
-                if (percentage < 1) percentage = 1;
-                if (percentage > 100) percentage = 100;
-
                 progress.initProgressBar();
-                progress.Maximum = (int)((double)progress.Value / (double)(percentage) * 100);
+                progress.Maximum = (int)((double)progress.Value / (double)(percentage < 1 ? 1 : (percentage > 100 ? 100 : percentage)) * 100);
             });
         }
 
